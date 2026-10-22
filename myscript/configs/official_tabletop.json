@@ -1,0 +1,7 @@
+{
+  "cameras": {"cam0": "front", "cam1": "wrist_cam"},
+  "observation_height": 480,
+  "observation_width": 640,
+  "fps": 33,
+  "episode_length": 3600
+}
