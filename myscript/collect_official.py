@@ -13,6 +13,8 @@ import json
 import platform
 from pathlib import Path
 import shutil
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import av
 import numpy as np
@@ -31,11 +33,14 @@ def main():
     parser.add_argument('--episodes', type=int, default=5, help='Number of successful episodes to retain')
     parser.add_argument('--max-attempts', type=int, default=30)
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--root', type=Path, default=ROOT/'data/official_tabletop_v1')
+    parser.add_argument('--root', type=Path, default=None)
     parser.add_argument('--repo-id', default='local/so101_official_tabletop')
     parser.add_argument('--max-passes', type=int, default=3)
     parser.add_argument('--preview', action='store_true', help='Save first successful rollout as a side-by-side video')
     args = parser.parse_args()
+    if args.root is None:
+        stamp = datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y%m%d_%H%M%S_%f')
+        args.root = ROOT / 'data' / f'{stamp}_官方场景示范'
     if args.root.exists():
         parser.error(f'Output exists: {args.root}. Choose a new --root; no files were replaced.')
     if args.episodes < 1 or args.max_attempts < args.episodes:

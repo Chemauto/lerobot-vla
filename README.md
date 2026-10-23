@@ -33,3 +33,12 @@ LeRobot源码固定到commit，官方环境资产固定到独立revision，下�
 ```
 
 详见 [快速开始](myscript/QUICKSTART.md) 与 [脚本说明](myscript/README.md)。已有数据位于 `data/official_tabletop_50/`，不会随仓库提交；换机器需重新采集或自行复制数据。
+
+## 🧠 训练与评估
+
+```bash
+.venv/bin/python model/train/act.py
+.venv/bin/python model/play/policy.py --checkpoint outputs/act20261023/train/checkpoints/last/pretrained_model
+```
+
+ACT 使用官方 LeRobot 训练器，默认训练 15,000 步。目录结构、断点续训和视频评估见 [模型说明](model/README.md)。
