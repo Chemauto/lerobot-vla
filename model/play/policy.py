@@ -45,6 +45,8 @@ def main():
     parser.add_argument("--trace", action="store_true", help="Save state/action traces for diagnosis")
     parser.add_argument("--torch-threads", type=int, default=2, help="Limit CPU overhead during GPU inference")
     parser.add_argument("--allow-nondeterministic", action="store_true", help="Allow faster, less repeatable PyTorch kernels")
+    parser.add_argument("--mc-dropout-samples", type=int, default=0,
+                        help="Diagnostic ACT-only feedforward dropout averaging; 0 keeps normal inference")
     args = parser.parse_args()
     if args.episodes < 1 or args.max_steps < 1:
         parser.error("episodes and max-steps must be positive")
@@ -60,9 +62,17 @@ def main():
     checkpoint = args.checkpoint.resolve()
     config = PreTrainedConfig.from_pretrained(checkpoint)
     config.device = args.device
+    if args.mc_dropout_samples < 0 or (args.mc_dropout_samples and config.type != "act"):
+        parser.error("mc-dropout-samples requires ACT and must be nonnegative")
     if args.n_action_steps is not None:
-        if not 1 <= args.n_action_steps <= config.chunk_size:
-            parser.error("Require 1 <= n-action-steps <= checkpoint chunk_size")
+        if hasattr(config, "chunk_size"):
+            maximum = config.chunk_size
+        elif hasattr(config, "horizon"):
+            maximum = config.horizon - config.n_obs_steps + 1
+        else:
+            parser.error("This policy does not expose a supported action horizon")
+        if not 1 <= args.n_action_steps <= maximum:
+            parser.error(f"Require 1 <= n-action-steps <= {maximum} for this checkpoint")
         config.n_action_steps = args.n_action_steps
     if args.temporal_ensemble_coeff is not None:
         if config.type != "act" or args.temporal_ensemble_coeff < 0:
@@ -74,6 +84,25 @@ def main():
         config.pretrained_backbone_weights = None
     policy = get_policy_class(config.type).from_pretrained(checkpoint, config=config)
     policy.to(args.device).eval()
+    if args.mc_dropout_samples:
+        # Read-only diagnostic intervention: official model and action queue remain in use.
+        # Enable only feedforward/residual nn.Dropout; VAE and attention dropout stay in eval.
+        def enable_feedforward_dropout(module, inputs):
+            for child in module.modules():
+                if isinstance(child, torch.nn.Dropout):
+                    child.training = True
+
+        policy.model.register_forward_pre_hook(enable_feedforward_dropout)
+        original_predict = policy.predict_action_chunk
+
+        def averaged_predict(batch):
+            count = args.mc_dropout_samples
+            expanded = {key: value.repeat(count, *([1] * (value.ndim - 1)))
+                        if isinstance(value, torch.Tensor) and value.ndim > 0 and value.shape[0] == 1
+                        else value for key, value in batch.items()}
+            return original_predict(expanded).mean(dim=0, keepdim=True)
+
+        policy.predict_action_chunk = averaged_predict
     preprocessor, postprocessor = make_pre_post_processors(
         config, pretrained_path=checkpoint,
         preprocessor_overrides={"device_processor": {"device": args.device}},
@@ -96,6 +125,7 @@ def main():
         "execution": {"n_action_steps": config.n_action_steps,
                       "temporal_ensemble_coeff": getattr(config, "temporal_ensemble_coeff", None),
                       "torch_threads": args.torch_threads,
+                      "mc_feedforward_dropout_samples": args.mc_dropout_samples,
                       "deterministic_torch": not args.allow_nondeterministic,
                       "determinism_scope": "PyTorch only; OpenGL-rendered pixels can still vary"},
         "success_definition": "official terminated flag (all four cubes in box)",

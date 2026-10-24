@@ -21,3 +21,13 @@ torchvision==0.26.0
 
 # Official ACT training runtime (logging to W&B is disabled by default).
 accelerate==1.15.0
+
+# Offline policy diagnostics and action comparison plots.
+matplotlib==3.11.2
+
+# Official Diffusion Policy optional dependency, within LeRobot's declared range.
+diffusers==0.39.0
+
+# Official SmolVLA optional dependencies, within this LeRobot revision's ranges.
+transformers==5.5.4
+num2words==0.5.14

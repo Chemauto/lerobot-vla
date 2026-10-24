@@ -53,4 +53,16 @@
 
 📦 **已采集50条成功演示**，共66,451帧：[数据目录](../data/official_tabletop_50)。
 
+## ➕ 从50条扩充到200条
+
+入口：[expand_dataset.py](expand_dataset.py)。保留原50条，调用上面的采集脚本从新种子250开始补采150条成功示范，再用 **LeRobot官方合并API** 生成 `data/official_tabletop_200`。
+
+```bash
+.venv/bin/python myscript/expand_dataset.py --run outputs/smolvla20261024
+```
+
+📦 原数据在 `official_tabletop_50`，新150条在 `official_tabletop_extra150`，最终200条在 `official_tabletop_200`。合并后逐项核对原50条动作、状态和时间戳不变，并运行数据验证；通过后才交给训练。输出已存在时拒绝覆盖。**有采集任务正在运行时不要重复启动。**
+
+📊 进度：实验目录的 `data_status.json` / `collect150.log`。采集中可从新增数据的 `collection_manifest.json` 查看已保存数量。失败与中断会保留已有数据，不能把未完成的目录当作完整200条训练。
+
 🎯 **当前固定场景数据**：[fixed_scene_seed200](../data/fixed_scene_seed200)，从上述数据第0条提取，共1,300帧。可用 `.venv/bin/python myscript/prepare_fixed_scene.py` 提取；现有目录不会覆盖，无需重复执行。

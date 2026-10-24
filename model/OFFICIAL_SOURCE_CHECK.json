@@ -1,0 +1,40 @@
+{
+  "lerobot_commit": "8a125584153240d7511dddfbda440bbee56b134a",
+  "checked_files": [
+    {
+      "file": "scripts/lerobot_train.py",
+      "matches_pinned_checkout": true,
+      "sha256": "c8b80a0240eca8accd27f5810e5dc5b9e6cb78286e889629ca09f02556a32dc8"
+    },
+    {
+      "file": "policies/act/modeling_act.py",
+      "matches_pinned_checkout": true,
+      "sha256": "83d954f79ccd3eaa6774dbea92524939c8ac08359bb355ba7cd37b8601e1e3af"
+    },
+    {
+      "file": "policies/act/configuration_act.py",
+      "matches_pinned_checkout": true,
+      "sha256": "7f5cce7ef62101fa5702a2abd83b2e5d93ac343a9dd35b271d893ccb4f31f037"
+    },
+    {
+      "file": "policies/diffusion/modeling_diffusion.py",
+      "matches_pinned_checkout": true,
+      "sha256": "92493b1e67777ccec447baa8a358b731956a919bd35407b8d2e628f2105fef3a"
+    },
+    {
+      "file": "policies/diffusion/configuration_diffusion.py",
+      "matches_pinned_checkout": true,
+      "sha256": "d5b9626e0e8156745e646cf81092263ba01a4f8d75a7ccdf37241d5b682ef8ad"
+    },
+    {
+      "file": "policies/factory.py",
+      "matches_pinned_checkout": true,
+      "sha256": "16d58386674759814f3fbd3174f71a0750bcd92cfb34a9d3f29113dd69b9d4bc"
+    },
+    {
+      "file": "datasets/factory.py",
+      "matches_pinned_checkout": true,
+      "sha256": "cdab551b86a82cc7bd4bf3806bf295dcd72fa826d1e8f4a289333a79c8faf322"
+    }
+  ]
+}
