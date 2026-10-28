@@ -1,68 +1,35 @@
-# 🤖 SO-101 仿真数据工厂
+# 🦾 通用仿真数据工具
 
-在 **[LeRobot 官方 MuJoCo 场景](https://huggingface.co/lerobot/so101-tabletop-mujoco)**中，让机械臂自动把四个方块放进绿盒子，再保存为可训练的数据。
+这里放 **IK、脚本专家、数据采集和检查**。指定场景配置即可复用；本目录不编排某次训练，也不保留失误排查代码。
 
-## ⭐ 自动生成训练数据：运行这个
+| 文件 | 用途 |
+| --- | --- |
+| ⭐ [collect_official.py](collect_official.py) | 自动执行专家，保存成功示范为LeRobot数据集 |
+| [official_teacher.py](official_teacher.py) | 接近 → 抓取 → 搬运 → 松爪 → 检查，支持重试 |
+| [official_ik.py](official_ik.py) | 有界IK，求机械臂关节目标 |
+| [official_env.py](official_env.py) | 加载固定版本官方MuJoCo环境 |
+| [task_variants.py](task_variants.py) | 单/四方块、固定/随机场景适配 |
+| [validate_official_data.py](validate_official_data.py) | 格式、完整视频解码、物理回放检查 |
+| [media_utils.py](media_utils.py) | 视频编码公共函数 |
+| [download_assets.py](download_assets.py) | 下载固定版本官方资产 |
+| `configs/`、[configs/scenes/](configs/scenes/README.md) | 场景参数与自动生成的XML |
 
-**入口：[collect_official.py](collect_official.py)**。它调用自动控制程序抓放方块，并将成功回合保存为 **LeRobot 训练数据集**。
+## 📷 采数据
 
-在 `/home/xcj/so101_vla` 仓库根目录执行，例如采集50条：
+在仓库根目录运行，例如使用单方块固定场景采10条：
 
 ```bash
 .venv/bin/python myscript/collect_official.py \
-  --episodes 50 --max-attempts 100 --seed 200 --preview \
-  --root data/tabletop20261023
+  --config myscript/configs/one_fixed.json \
+  --episodes 10 --max-attempts 30 --seed 30000 --preview \
+  --root data/my_demos
+
+.venv/bin/python myscript/validate_official_data.py \
+  --root data/my_demos --decode-all --replay-physics
 ```
 
-- 🎯 `--episodes 50`：目标保留50条成功示范；最多尝试100回合，失败不保存。达到上限仍不足时会报错，已完成的数据保留。
-- 🎲 `--seed 200`：从种子200开始逐回合递增，**各回合会换摆放位置，不是固定场景采集**。
-- 📂 `--root`：新数据目录，已有目录不会覆盖；不传则自动按时间命名。
-- 🎬 `--preview`：额外保存首条成功示范视频 `preview_success.mp4`。
+📦 每帧记录“动作前双相机图像＋6维状态 → 专家动作”，33Hz；关节角为度，夹爪0–100。目标数量、随机种子和初末状态写入manifest，源代码与配置随数据保存。已有数据目录拒绝覆盖。
 
-✅ 采完检查：
+🔒 官方源码和接触物理不改。单方块和固定摆放属于本地场景适配；随机化、相机等由JSON指定。验证完成的数据才交给模型训练。
 
-```bash
-.venv/bin/python myscript/validate_official_data.py --root data/tabletop20261023
-```
-
-📦 数据目录包含双相机视频、关节状态、动作、任务指令，以及采集记录 `collection_manifest.json`。**此入口只采集，不启动模型训练。**
-
-## 🧠 自动控制的思路
-
-🧠 **流程**：读取方块位置 → 求解抓取姿态 → 平滑抓放 → 失败重试 → 只保留成功回合。
-
-- 🦾 夹爪朝下，并对齐方块方向，减少推走和掉落。
-- 📷 保存前视/腕部画面、关节状态、动作和任务指令。
-- 📦 输出 LeRobot 格式，33Hz；记录随机种子，便于复现。
-- 🔒 不改官方源码、XML或摩擦参数；这是脚本专家，还不是训练好的策略。
-
-![官方环境自动抓放](assets/official_success.jpg)
-
-🧪 **本轮验证：20个测试种子全部成功**（小样本，不代表任意场景都能成功）。
-
-🚀 **[快速开始](QUICKSTART.md)** · 📄 **[诊断记录](../outputs/act20261023/README.md)**
-
-| 脚本 | 用途 |
-| --- | --- |
-| ⭐ [collect_official.py](collect_official.py) | **自动采集新数据，训练数据生成入口** |
-| 🦾 [official_teacher.py](official_teacher.py) | 自动控制与演示；要保存训练数据请用上面的采集入口 |
-| ✂️ [prepare_fixed_scene.py](prepare_fixed_scene.py) | 从现有数据提取一条固定场景示范，**不重新采集** |
-| ✅ [validate_official_data.py](validate_official_data.py) | 检查数据完整性、动作格式和视频 |
-| ⚙️ [official_env.py](official_env.py) | 加载固定版本官方环境，供其他脚本调用 |
-| 📐 [official_ik.py](official_ik.py) | 计算关节航点，供控制程序调用 |
-
-📦 **已采集50条成功演示**，共66,451帧：[数据目录](../data/official_tabletop_50)。
-
-## ➕ 从50条扩充到200条
-
-入口：[expand_dataset.py](expand_dataset.py)。保留原50条，调用上面的采集脚本从新种子250开始补采150条成功示范，再用 **LeRobot官方合并API** 生成 `data/official_tabletop_200`。
-
-```bash
-.venv/bin/python myscript/expand_dataset.py --run outputs/smolvla20261024
-```
-
-📦 原数据在 `official_tabletop_50`，新150条在 `official_tabletop_extra150`，最终200条在 `official_tabletop_200`。合并后逐项核对原50条动作、状态和时间戳不变，并运行数据验证；通过后才交给训练。输出已存在时拒绝覆盖。**有采集任务正在运行时不要重复启动。**
-
-📊 进度：实验目录的 `data_status.json` / `collect150.log`。采集中可从新增数据的 `collection_manifest.json` 查看已保存数量。失败与中断会保留已有数据，不能把未完成的目录当作完整200条训练。
-
-🎯 **当前固定场景数据**：[fixed_scene_seed200](../data/fixed_scene_seed200)，从上述数据第0条提取，共1,300帧。可用 `.venv/bin/python myscript/prepare_fixed_scene.py` 提取；现有目录不会覆盖，无需重复执行。
+🚀 [快速开始](QUICKSTART.md) · 📦 [当前数据说明](../data/README.md)

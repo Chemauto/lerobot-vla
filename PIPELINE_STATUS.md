@@ -45,7 +45,7 @@
 
 ## 后续核对：配置来源与第二模型
 
-官方源码已做7个核心文件哈希核对；ACT旧实验的chunk_size、n_action_steps、训练预算与BF16等为本地设置，不能称全官方默认。Diffusion Policy模型参数继承官方默认，已完成2步训练、保存加载与64步仿真接入测试，不代表策略效果验证。详见 model/CONFIG_PROVENANCE.md 和 outputs/diffusion20261023/interface_check/README.md。
+官方源码已做7个核心文件哈希核对；ACT旧实验的chunk_size、n_action_steps、训练预算与BF16等为本地设置，不能称全官方默认。Diffusion Policy模型参数继承官方默认，已完成2步训练、保存加载与64步仿真接入测试，不代表策略效果验证。这些是历史核对记录，当前入口见model/README.md。
 
 
 ## 2026-10-24：200条与预训练SmolVLA

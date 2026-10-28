@@ -15,16 +15,21 @@ REPO='lerobot/so101-tabletop-mujoco'
 REVISION='12e504e860c369aad1a9a9eab3fdfbac658ed6dd'
 DEFAULT_CONFIG=Path(__file__).parent/'configs/official_tabletop.json'
 
-def make_official_env(config_path=DEFAULT_CONFIG, **overrides):
-    settings=json.loads(Path(config_path).read_text());settings.update(overrides)
+def load_official_module(name='so101_pinned_official_env'):
     # The snapshot must include its XML/STL assets, not only env.py.
     path=hf_hub_download(REPO,'env.py',revision=REVISION,local_files_only=True)
-    name='so101_pinned_official_env'
     if name not in sys.modules:
         spec=importlib.util.spec_from_file_location(name,path)
         module=importlib.util.module_from_spec(spec);sys.modules[name]=module
         spec.loader.exec_module(module)
-    return sys.modules[name].make_env(n_envs=1,use_async_envs=False,**settings)
+    return sys.modules[name]
+
+def make_official_env(config_path=DEFAULT_CONFIG, **overrides):
+    settings=json.loads(Path(config_path).read_text());settings.update(overrides)
+    if 'task_variant' in settings:
+        from task_variants import make_variant_env
+        return make_variant_env(settings)
+    return load_official_module().make_env(n_envs=1,use_async_envs=False,**settings)
 
 if __name__=='__main__':
     envs=make_official_env();env=envs['so101_tabletop'][0]

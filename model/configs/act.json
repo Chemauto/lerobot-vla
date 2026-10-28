@@ -1,7 +1,5 @@
 {
   "dataset": {
-    "repo_id": "local/so101_official_tabletop",
-    "root": "data/official_tabletop_50",
     "video_backend": "pyav",
     "eval_split": 0.2
   },
@@ -13,17 +11,22 @@
     "n_action_steps": 10
   },
   "output_dir": null,
-  "job_name": "act_official",
+  "job_name": "act_tabletop",
   "seed": 1000,
-  "steps": 15000,
-  "batch_size": 8,
-  "num_workers": 4,
+  "steps": 30000,
+  "batch_size": 12,
+  "num_workers": 6,
   "prefetch_factor": 2,
-  "accelerator": {"mixed_precision": "bf16"},
+  "accelerator": {
+    "mixed_precision": "bf16"
+  },
   "log_freq": 100,
   "save_freq": 3000,
   "env_eval_freq": 0,
-  "eval_steps": 1000,
-  "max_eval_samples": 128,
-  "wandb": {"enable": false}
+  "eval_steps": 3000,
+  "max_eval_samples": 0,
+  "wandb": {
+    "enable": false
+  },
+  "save_checkpoint": true
 }

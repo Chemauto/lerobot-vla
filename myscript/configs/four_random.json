@@ -1,0 +1,59 @@
+{
+  "task_variant": {
+    "cube_count": 4,
+    "layout": "random"
+  },
+  "cameras": {
+    "cam0": "front",
+    "cam1": "wrist_cam"
+  },
+  "observation_height": 480,
+  "observation_width": 640,
+  "fps": 33,
+  "episode_length": 3600,
+  "randomize": {
+    "joints": 2.0,
+    "bodies": {
+      "box": {
+        "pos": [
+          0,
+          0,
+          0
+        ]
+      },
+      "red_cube": {
+        "pos": [
+          0.06,
+          0.14,
+          0
+        ],
+        "yaw": 3.1416
+      },
+      "green_cube": {
+        "pos": [
+          0.06,
+          0.14,
+          0
+        ],
+        "yaw": 3.1416
+      },
+      "blue_cube": {
+        "pos": [
+          0.06,
+          0.14,
+          0
+        ],
+        "yaw": 3.1416
+      },
+      "yellow_cube": {
+        "pos": [
+          0.06,
+          0.14,
+          0
+        ],
+        "yaw": 3.1416
+      }
+    },
+    "cameras": {}
+  }
+}

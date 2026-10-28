@@ -1,43 +1,37 @@
 # 🚀 快速开始
 
-## ① 进入项目 📂
+在仓库根目录使用 `.venv/bin/python`，首次安装见 [项目README](../README.md)。
+
+### ① 准备场景 🧩
 
 ```bash
-# 在仓库根目录执行
+.venv/bin/python myscript/download_assets.py --offline
 ```
 
-使用 `.venv`；首次安装见根目录README。官方环境资产可用 `myscript/download_assets.py` 下载。
+首次下载去掉 `--offline`。场景JSON在 `myscript/configs/`，派生XML自动生成到 `configs/scenes/`。
 
-## ② 看机械臂自动抓放 🦾
-
-```bash
-.venv/bin/python myscript/official_teacher.py \
-  --episodes 3 --seed 42 --video \
-  --out-dir outputs/official_teacher_demo
-```
-
-🎬 首个回合的视频和逐回合结果保存在输出目录。
-
-## ③ 自动采数据 📷
+### ② 自动采集 📷
 
 ```bash
 .venv/bin/python myscript/collect_official.py \
-  --episodes 5 --max-attempts 30 --seed 42 --preview \
-  --root data/my_official_demos
+  --config myscript/configs/one_fixed.json \
+  --episodes 10 --max-attempts 30 --seed 30000 --preview \
+  --root data/my_demos
 ```
 
-📦 `--episodes` 是**要保留的成功回合数**；失败回合自动丢弃。已有目录不会覆盖。
+`--episodes`是要保留的成功回合数，失败回合丢弃；已有目录不覆盖。图像/状态记录在动作执行前。
 
-每帧记录：**动作之前的双相机画面 + 6维关节状态 → 实际发出的6维动作**。前5维为度，夹爪为0–100，33Hz。
-
-✅ 放下、开爪并等待后，四个方块仍在盒内，才保存。种子、初始物体状态和控制器版本记录在 `collection_manifest.json` 与 `collector_sources/`。
-
-## ④ 检查数据 ✅
+### ③ 检查 ✅
 
 ```bash
-.venv/bin/python myscript/validate_official_data.py --root data/my_official_demos
+.venv/bin/python myscript/validate_official_data.py \
+  --root data/my_demos --decode-all --replay-physics
 ```
 
-📦 已有数据：`data/official_tabletop_50/`（50条、66,451帧）。
+### ④ 训练 🧠
 
-## 接下来 🎓
+```bash
+.venv/bin/python model/train/act.py --dataset data/my_demos
+```
+
+采集与训练是独立工具。替换场景JSON与数据集目录即可用于其他场景。

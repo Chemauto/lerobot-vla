@@ -15,7 +15,7 @@ VLM_REVISION = '7b375e1b73b11138ff12fe22c8f2822d8fe03467'
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--run', type=Path, required=True)
+    parser.add_argument('--run', type=Path, default=ROOT/'.cache/downloads/smolvla')
     args = parser.parse_args()
     args.run.mkdir(parents=True, exist_ok=True)
     state = {'status': 'downloading', 'assets': []}

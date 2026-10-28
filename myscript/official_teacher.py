@@ -157,6 +157,7 @@ class OfficialTeacher:
 
     def run(self):
         records = []
+        target_count = len(self.w.cube_bodies)
         for attempt in range(self.max_passes):
             for i, body in enumerate(self.w.cube_bodies):
                 if self.done:
@@ -167,13 +168,13 @@ class OfficialTeacher:
                 result['pass'] = attempt+1
                 records.append(result)
                 print(result, flush=True)
-            if self.w.cubes_in_box() == 4 or self.done:
+            if self.w.cubes_in_box() == target_count or self.done:
                 break
         self.phase = 'settle'
         self.hold(100, .8)
         count = self.w.cubes_in_box()
         # Stronger than raw termination: gripper is open and all four remain inside.
-        success = count == 4 and self.info.get('is_success', False) and not self.done
+        success = count == target_count and self.info.get('is_success', False) and not self.done
         return dict(records=records, cubes_in_box=count, success=bool(success),
                     terminal_seen=self.terminal_seen, steps=self.steps,
                     truncated=self.done)
@@ -184,7 +185,7 @@ def main():
     parser.add_argument('--episodes', type=int, default=3)
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--video', action='store_true')
-    parser.add_argument('--out-dir', type=Path, default=ROOT/'outputs/official_teacher')
+    parser.add_argument('--out-dir', type=Path, default=ROOT/'.cache/teacher_demos')
     parser.add_argument('--controller', choices=['ik', 'dls'], default='ik')
     parser.add_argument('--max-passes', type=int, default=3)
     args = parser.parse_args()

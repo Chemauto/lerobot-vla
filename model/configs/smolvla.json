@@ -1,7 +1,5 @@
 {
   "dataset": {
-    "repo_id": "local/so101_official_tabletop_200",
-    "root": "data/official_tabletop_200",
     "video_backend": "pyav",
     "eval_split": 0.2
   },
@@ -17,7 +15,7 @@
     "observation.images.wrist": "observation.images.camera2"
   },
   "output_dir": null,
-  "job_name": "smolvla_official_200",
+  "job_name": "smolvla_local",
   "seed": 1000,
   "steps": 30000,
   "batch_size": 16,

@@ -37,6 +37,7 @@ def main():
     parser.add_argument('--repo-id', default='local/so101_official_tabletop')
     parser.add_argument('--max-passes', type=int, default=3)
     parser.add_argument('--preview', action='store_true', help='Save first successful rollout as a side-by-side video')
+    parser.add_argument('--config', type=Path, default=Path(__file__).parent/'configs/official_tabletop.json')
     args = parser.parse_args()
     if args.root is None:
         stamp = datetime.now(ZoneInfo('Asia/Shanghai')).strftime('%Y%m%d_%H%M%S_%f')
@@ -45,7 +46,10 @@ def main():
         parser.error(f'Output exists: {args.root}. Choose a new --root; no files were replaced.')
     if args.episodes < 1 or args.max_attempts < args.episodes:
         parser.error('Require 1 <= episodes <= max-attempts')
-    envs = make_official_env(initial_joints=INITIAL_JOINTS)
+    settings = json.loads(args.config.read_text())
+    variant = settings.get('task_variant')
+    target_count = variant['cube_count'] if variant else 4
+    envs = make_official_env(config_path=args.config, initial_joints=INITIAL_JOINTS)
     raw = envs['so101_tabletop'][0].envs[0]
     features = {
         'observation.images.front': {'dtype': 'video', 'shape': (480, 640, 3), 'names': ['height', 'width', 'channels']},
@@ -63,19 +67,25 @@ def main():
     sources = args.root/'collector_sources'
     sources.mkdir()
     hashes = {}
-    for name in ['official_teacher.py', 'official_ik.py', 'official_env.py', 'collect_official.py', 'media_utils.py']:
+    source_names = ['official_teacher.py', 'official_ik.py', 'official_env.py', 'collect_official.py', 'media_utils.py']
+    if variant: source_names.append('task_variants.py')
+    for name in source_names:
         path = Path(__file__).parent/name
         shutil.copy2(path, sources/name)
         hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
     (sources/'configs').mkdir()
-    shutil.copy2(Path(__file__).parent/'configs/official_tabletop.json', sources/'configs/official_tabletop.json')
+    shutil.copy2(args.config, sources/'configs/official_tabletop.json')
     versions = {name: importlib.metadata.version(name) for name in ['lerobot', 'mujoco', 'numpy', 'scipy', 'av']}
     versions['python'] = platform.python_version()
     manifest = dict(versions=versions, env_repo=REPO, env_revision=REVISION, fps=raw.fps,
-                    initial_joints=INITIAL_JOINTS, randomization='official defaults',
+                    initial_joints=INITIAL_JOINTS, randomization=settings.get('randomize', 'official defaults'),
                     physics_overrides=False, sources_sha256=hashes,
                     state_units='arm: degrees; gripper: normalized 0..100',
                     alignment='observation before action', episodes=[], attempts=[])
+    if variant:
+        manifest.update(task_variant=variant, target_cube_count=target_count,
+            derived_task=True, strict_success='All target cubes in box; action and actual gripper>=95 for final66 consecutive frames',
+            provenance='Pinned official environment, locally configured task constants and external fixed/single-cube scene; contact physics unchanged')
     kept = 0
     preview_saved = False
     try:
@@ -86,10 +96,13 @@ def main():
             phase_changes = []
             frame_number = 0
             last_phase = None
+            stable_frames = 0
             instruction = raw.task_description
 
             def record(obs, action, phase):
-                nonlocal frame_number, last_phase
+                nonlocal frame_number, last_phase, stable_frames
+                stable = raw._world.cubes_in_box() == target_count and obs['agent_pos'][5] >= 95 and action[5] >= 95
+                stable_frames = stable_frames+1 if stable else 0
                 if phase != last_phase:
                     phase_changes.append(dict(frame=frame_number, phase=phase))
                     last_phase = phase
@@ -104,6 +117,12 @@ def main():
             teacher = OfficialTeacher(raw, video=args.preview and not preview_saved,
                                       max_passes=args.max_passes, on_frame=record)
             result = teacher.run()
+            if variant and result['success']:
+                teacher.phase = 'stable_finish'
+                teacher.hold(100, 2.2)
+                result.update(cubes_in_box=raw._world.cubes_in_box(), steps=teacher.steps,
+                    truncated=teacher.done, final_stable_frames=stable_frames,
+                    success=bool(raw._world.cubes_in_box() == target_count and stable_frames >= 66 and not teacher.done))
             manifest['attempts'].append(dict(seed=seed, success=result['success'],
                                               cubes_in_box=result['cubes_in_box'], frames=frame_number))
             if result['success']:
@@ -120,7 +139,7 @@ def main():
                 print(f'KEPT {kept}/{args.episodes}: seed={seed}, frames={frame_number}', flush=True)
             else:
                 ds.clear_episode_buffer()
-                print(f'DISCARDED seed={seed}: {result["cubes_in_box"]}/4 cubes', flush=True)
+                print(f'DISCARDED seed={seed}: {result["cubes_in_box"]}/{target_count} cubes', flush=True)
             (args.root/'collection_manifest.json').write_text(json.dumps(manifest, indent=2))
             if kept >= args.episodes:
                 break

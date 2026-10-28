@@ -10,6 +10,8 @@ __pycache__/
 .mypy_cache/
 .uv-cache/
 .cache/
+# Generated scene XML embeds the host's pinned Hugging Face asset paths.
+/myscript/configs/scenes/*.xml
 
 # Local datasets, downloaded assets, checkpoints and run outputs
 /data/
